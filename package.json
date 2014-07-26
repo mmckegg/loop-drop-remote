@@ -1,0 +1,23 @@
+{
+  "name": "loop-drop-remote",
+  "version": "0.0.0",
+  "description": "List of remote connections for loop-drop app",
+  "main": "index.js",
+  "scripts": {
+    "test": "beefy example.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "dom-behavior": "^1.2.0",
+    "json-query": "^1.0.0",
+    "become": "^1.4.0",
+    "rincewind": "^1.8.0",
+    "rincewind-precompile-transform": "^1.1.2"
+  },
+  "browserify": {
+    "transform": [
+      "rincewind-precompile-transform"
+    ]
+  }
+}
