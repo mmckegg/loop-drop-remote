@@ -40,8 +40,12 @@ module.exports = function vu(element){
 
     function update(){
       if (currentValue){
-        vuL.value = Math.max(-40, getDecibels(currentValue[0]))
-        vuR.value = Math.max(-40, getDecibels(currentValue[1]))
+        if (vuL){
+          vuL.value = Math.max(-40, getDecibels(currentValue[0]))
+        }
+        if (vuR){
+          vuR.value = Math.max(-40, getDecibels(currentValue[1]))
+        }
       }
       updating = false
     }

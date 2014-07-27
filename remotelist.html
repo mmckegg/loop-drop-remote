@@ -1,22 +1,132 @@
-<t:placeholder t:if='clientId'>
-  <h1>Connected!</h1>
-  <div class="RemoteList">
+<? require './views/mcss.js' as mcss ?>
+<? require './providers/is_empty.js' as isEmpty ?>
+
+<style t:view='mcss' scoped>
+  RemoteList {
+    flex: 1;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    margin: 5px 20px;
+    font-size: 120%;
+
+    ul {
+      flex: 1;
+      padding: 0;
+      margin: 0;
+      
+      li {
+        list-style: none
+      }
+
+    }
+
+    h1 {
+      font-weight: normal;
+      font-size: 120%;
+    }
+
+    div.info {
+
+    }
+  }
+
+  RemoteItem {
+    padding: 4px 0;
+    span.controls {
+      float:right;
+    }
+  }
+
+  MiniVU {
+    display: inline-block;
+    width: 40px;
+    meter {
+      width: 40px;
+    }
+  }
+
+  ToggleButton {
+    text-decoration: none;
+    font-size: 11px;
+    padding: 2px 5px;
+    border-radius: 4px;
+    display: inline-block;
+    border: #6B806B 1px solid;
+    background: #6F6F6F;
+    color: #D0D0D0;
+
+    -mute {
+      border-color: #806B6B;
+
+      -active {
+        background: #573236;
+        color: #EBBB27;
+        :after {
+          background: #EBBB27;
+        }
+      }
+
+      :hover {
+        border-color: #BD8484;
+        color: #FFC9C9;
+      }
+    }
+
+    -active {
+      background: #325736;
+      :after {
+        background: #82D182;
+      }
+
+    }
+
+    :hover {
+      border-color: #84BD89;
+      color: #D6FFC9;
+    }
+
+    :after {
+      display: inline-block;
+      border-radius: 3px;
+      width: 6px;
+      height: 6px;
+      background: #AAA4A4;
+      content: '';
+      margin-left: 2px;
+      vertical-align: middle;
+    }
+
+  }
+</style>
+
+<div class="RemoteList">
+  <t:placeholder t:if='clientId'>
+    <h1>Connected</h1>
     <ul>
       <li class="RemoteItem" data-behavior="remote.item" t:repeat='remotes'>
-        <strong class=".id" t:bind='.id'></strong>
-        <span class=".nickname" t:bind='.nickname'></span>
-        <t:placeholder t:if='.isPlayer'>
-          <a class=".muteButton">mute</a>
-          <div class='.vu' data-behavior='vu' t:bind:data-id='.id'>
+        <strong class=".nickname" t:bind='.nickname' />
+        <span class='.controls' t:if='.isPlayer'>
+          <a data-behavior='mute' t:bind:data-id='.id' class="ToggleButton -mute" href='#mute'>mute</a>
+          <div class='MiniVU' data-behavior='vu' t:bind:data-id='.id'>
             <meter min='-20' class='.left' high='0' value='-20' max='6' />
-            <meter min='-20' class='.right' high='0' value='-20' max='6' />
           </div>
-        </t:placeholder>
+        </span>
+
+        <span class='.controls' t:unless='.isPlayer'>
+          (listener)
+        </span>
       </li>
     </ul>
-  </div>
-</t:placeholder>
 
-<t:placeholder t:unless='clientId'>
-  <h1>Not connected</h1>
-</t:placeholder>
+    <div class=".info">
+      <p t:if='remotes:isEmpty'>No other participants</p>
+      <p t:if='server'><strong>Connected to server:</strong> <br/> <span t:bind='server' /></p>
+    </div>
+  </t:placeholder>
+
+  <t:placeholder t:unless='clientId'>
+    <h1>Not connected</h1>
+    <p t:if='server'><strong>Server must be running at:</strong> <br/> <span t:bind='server' /></p>
+  </t:placeholder>
+</div>

@@ -19,7 +19,8 @@
     "ditty": "^1.2.0",
     "through": "^2.3.4",
     "websocket-stream": "^0.6.0",
-    "audio-rms": "^1.0.0"
+    "audio-rms": "^1.0.0",
+    "micro-css": "^0.4.1"
   },
   "browserify": {
     "transform": [
