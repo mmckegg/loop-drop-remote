@@ -6,6 +6,7 @@ var behave = require('./behaviors')
 var createInstance = require('./lib/create_instance')
 var connectLocalInstance = require('./lib/connect_local_instance')
 var connect = require('./lib/connect')
+var Syncer = require('./lib/syncer')
 
 var IAC = require('inheritable-audio-context')
 
@@ -80,7 +81,7 @@ module.exports = function(parentAudioContext, element){
     // update playback
     if (message.updateSlot || message.updateLoop){
       if (!remote.instance){
-        remote.instance = createInstance(audioContext)
+        remote.instance = createInstance(audioContext, context.data.syncOffset)
         remote.instance.connect(self.output)
         remote.isPlayer = true
         shouldRefresh = true
@@ -95,12 +96,38 @@ module.exports = function(parentAudioContext, element){
       }
     }
 
+    if (message.tempo && context.audioContext.scheduler){
+      context.audioContext.scheduler.setTempo(message.tempo)
+    }
+
     if (shouldBroadcastLocal){
       // this is a new connection, send our local instance to them
       broadcastLocalInstance(message.from)
+
+      // send tempo if this is a new connection
+      if (context.audioContext.scheduler && !message.to){
+        context.connection.write({
+          to: message.from,
+          tempo: context.audioContext.scheduler.getTempo()
+        })
+      }
+
     }
 
     return shouldRefresh
+  }
+
+  function updateOffset(offset, tempo){
+    context.data.syncOffset = offset
+    if (context.localInstance){
+      context.localInstance.loop.setOffset(offset)
+    }
+    context.data.remotes.forEach(function(remote){
+      if (remote.instance){
+        remote.instance.loop.setOffset(offset)
+      }
+    })
+    console.log('sync offset', offset)
   }
 
   self.connect = function(server, localInstance, nickname){
@@ -109,6 +136,11 @@ module.exports = function(parentAudioContext, element){
     // send our local messages to server
     context.localInstance = localInstance
     context.data.nickname = nickname
+
+    // sync with other users
+    context.syncer = Syncer(audioContext.scheduler, context.connection)
+    context.syncer.on('offset', updateOffset)
+    context.syncer.sync()
 
     if (context.localInstance){
       connectLocalInstance(context.connection, localInstance)
@@ -148,9 +180,11 @@ module.exports = function(parentAudioContext, element){
     audioContext: audioContext,
     connection: null,
     get: getValue,
+    syncer: null,
     refresh: refresh,
     remoteLookup: {},
     data: {
+      syncOffset: 0,
       clientId: null,
       remotes: []
     },
