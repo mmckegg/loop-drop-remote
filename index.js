@@ -96,10 +96,6 @@ module.exports = function(parentAudioContext, element){
       }
     }
 
-    if (message.tempo && context.audioContext.scheduler){
-      context.audioContext.scheduler.setTempo(message.tempo)
-    }
-
     if (shouldBroadcastLocal){
       // this is a new connection, send our local instance to them
       broadcastLocalInstance(message.from)
