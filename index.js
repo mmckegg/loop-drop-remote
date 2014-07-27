@@ -3,24 +3,153 @@ var become = require('become')
 var jsonQuery = require('json-query')
 var EventEmitter = require('events').EventEmitter
 var behave = require('./behaviors')
+var createInstance = require('./lib/create_instance')
+var connectLocalInstance = require('./lib/connect_local_instance')
+var connect = require('./lib/connect')
+
+var IAC = require('inheritable-audio-context')
 
 /// the main view
 var render = View(__dirname + '/remotelist.html')
 
-module.exports = function(element, audioContext){
-  // var audioContext = Object.create(parentAudioContext)
-  var self = audioContext.createGain()
-  // audioContext.loadSample = function(src, cb){
+module.exports = function(parentAudioContext, element){
 
-  // }
+  var audioContext = IAC(parentAudioContext, true)
+  var self = audioContext.createGain()
+
+  //audioContext.loadSample = function(src, cb){
+//
+  //}
+
+  function broadcastLocalInstance(to){
+    context.connection.write({
+      nickname: context.data.nickname,
+      to: to
+    })
+    if (context.localInstance && context.connection){
+      context.localInstance.getDescriptors().forEach(function(descriptor){
+        context.connection.write({
+          updateSlot: descriptor, 
+          to: to
+        })
+      })
+      context.connect.write({
+        updateLoop: context.localInstance.loop.getPlayback(),
+        to: to
+      })
+    }
+  }
+
+  function remoteDisconnect(id){
+    var shouldRefresh = false
+    var remote = context.remoteLookup[id] 
+    if (remote){
+      context.remoteLookup[id] = null
+      if (remote.instance){
+        remote.instance.disconnect()
+        remote.instance.destroy()
+      }
+      var index = context.data.remotes.indexOf(remote)
+      if (~index){
+        context.data.remotes.splice(index, 1)
+        shouldRefresh = true
+      }
+    }
+    return shouldRefresh
+  }
+
+  function updateRemote(id, message){
+    // add new clients
+    var shouldRefresh = false
+    var shouldBroadcastLocal = false
+
+    var remote = context.remoteLookup[message.from] 
+    if (!remote){
+      remote = context.remoteLookup[message.from] = {id: message.from}
+      context.data.remotes.push(remote)
+      shouldBroadcastLocal = true
+    }
+
+    // update nickname
+    if (message.nickname && message.nickname !== remote.nickname){
+      remote.nickname = message.nickname
+      shouldRefresh = true
+    }
+
+    // update playback
+    if (message.updateSlot || message.updateLoop){
+      if (!remote.instance){
+        remote.instance = createInstance(audioContext)
+        remote.connect(self)
+      }
+
+      if (message.updateSlot){
+        remote.instance.update(object.updateSlot)
+      }
+
+      if (message.updateLoop){
+        remote.instance.loop.setPlayback(object.updateLoop.notes, object.updateLoop.length)
+      }
+    }
+
+    if (shouldBroadcastLocal){
+      // this is a new connection, send our local instance to them
+      broadcastLocalInstance(message.from)
+    }
+
+    return shouldRefresh
+  }
+
+  self.connect = function(server, localInstance, nickname){
+    context.connection = connect(server)
+
+    // send our local messages to server
+    context.localInstance = localInstance
+    context.data.nickname = nickname
+
+    if (context.localInstance){
+      connectLocalInstance(context.connection, localInstance)
+    }
+
+    broadcastLocalInstance()
+
+    context.connection.on('data', function(message){
+      var shouldRefresh = false
+      if (message.from == 'server'){
+        if (message.clientId){
+          context.data.clientId = message.clientId
+          if (!context.data.nickname){
+            context.data.nickname = 'remote' + message.clientId
+          }
+          shouldRefresh = true
+        }
+        if (message.clientDisconnect){
+          if (remoteDisconnect(message.clientDisconnect)){
+            shouldRefresh = true
+          }
+        }
+      } else if (typeof message.from == 'number') { // message from remote
+        if (updateRemote(message.from, message)){
+          shouldRefresh = true
+        }
+      }
+      if (shouldRefresh){
+        refresh()
+      }
+    })
+  }
+
   var updateBehaviors = behave(element)
 
   var context = {
     audioContext: audioContext,
+    connection: null,
     get: getValue,
     refresh: refresh,
+    remoteLookup: {},
     data: {
-      remote: null
+      clientId: null,
+      remotes: []
     },
     source: null
   }
