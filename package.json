@@ -6,7 +6,7 @@
   "scripts": {
     "test": "beefy example.js"
   },
-  "author": "",
+  "author": "Matt McKegg",
   "license": "ISC",
   "dependencies": {
     "dom-behavior": "^1.2.0",
