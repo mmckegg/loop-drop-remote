@@ -19,6 +19,8 @@ module.exports = function(parentAudioContext, element){
   var self = new EventEmitter()
   self.output = audioContext.createGain()
 
+  var releaseLocalInstance = null
+
   //audioContext.loadSample = function(src, cb){
 //
   //}
@@ -99,15 +101,6 @@ module.exports = function(parentAudioContext, element){
     if (shouldBroadcastLocal){
       // this is a new connection, send our local instance to them
       broadcastLocalInstance(message.from)
-
-      // send tempo if this is a new connection
-      if (context.audioContext.scheduler && !message.to){
-        context.connection.write({
-          to: message.from,
-          tempo: context.audioContext.scheduler.getTempo()
-        })
-      }
-
     }
 
     return shouldRefresh
@@ -116,18 +109,24 @@ module.exports = function(parentAudioContext, element){
   function updateOffset(offset, tempo){
     context.data.syncOffset = offset
     if (context.localInstance){
-      context.localInstance.loop.setOffset(offset)
+      context.localInstance.setOffset(offset)
     }
     context.data.remotes.forEach(function(remote){
       if (remote.instance){
-        remote.instance.loop.setOffset(offset)
+        remote.instance.setOffset(offset)
       }
     })
     console.log('sync offset', offset)
   }
 
   self.connect = function(server, localInstance, nickname){
+
+    if (context.connection){
+      self.disconnect()
+    }
+
     context.connection = connect(server)
+    context.data.server = server
 
     // send our local messages to server
     context.localInstance = localInstance
@@ -138,11 +137,17 @@ module.exports = function(parentAudioContext, element){
     context.syncer.on('offset', updateOffset)
     context.syncer.sync()
 
+    // resync after the server noise has died down
+    setTimeout(function(){
+      context.syncer.sync()
+    }, 3000)
+
     if (context.localInstance){
-      connectLocalInstance(context.connection, localInstance)
+      releaseLocalInstance = connectLocalInstance(context.connection, localInstance)
     }
 
     broadcastLocalInstance()
+    refresh()
 
     context.connection.on('data', function(message){
       var shouldRefresh = false
@@ -168,6 +173,27 @@ module.exports = function(parentAudioContext, element){
         refresh()
       }
     })
+  }
+
+  self.disconnect = function(){
+    context.connection.close()
+
+    context.data.remotes.forEach(function(remote){
+      if (remote.instance){
+        remote.instance.destroy()
+      }
+    })
+    
+    if (releaseLocalInstance){
+      releaseLocalInstance()
+      releaseLocalInstance = null
+    }
+
+    context.data.remotes = []
+    context.remoteLookup = {}
+    context.connection = null
+    context.clientId = null
+    refresh()
   }
 
   var updateBehaviors = behave(element)
