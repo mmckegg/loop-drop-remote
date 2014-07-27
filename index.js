@@ -15,7 +15,8 @@ var render = View(__dirname + '/remotelist.html')
 module.exports = function(parentAudioContext, element){
 
   var audioContext = IAC(parentAudioContext, true)
-  var self = audioContext.createGain()
+  var self = new EventEmitter()
+  self.output = audioContext.createGain()
 
   //audioContext.loadSample = function(src, cb){
 //
@@ -33,7 +34,7 @@ module.exports = function(parentAudioContext, element){
           to: to
         })
       })
-      context.connect.write({
+      context.connection.write({
         updateLoop: context.localInstance.loop.getPlayback(),
         to: to
       })
@@ -65,7 +66,7 @@ module.exports = function(parentAudioContext, element){
 
     var remote = context.remoteLookup[message.from] 
     if (!remote){
-      remote = context.remoteLookup[message.from] = {id: message.from}
+      remote = context.remoteLookup[message.from] = {id: message.from, isPlayer: false}
       context.data.remotes.push(remote)
       shouldBroadcastLocal = true
     }
@@ -80,15 +81,17 @@ module.exports = function(parentAudioContext, element){
     if (message.updateSlot || message.updateLoop){
       if (!remote.instance){
         remote.instance = createInstance(audioContext)
-        remote.connect(self)
+        remote.instance.connect(self.output)
+        remote.isPlayer = true
+        shouldRefresh = true
       }
 
       if (message.updateSlot){
-        remote.instance.update(object.updateSlot)
+        remote.instance.update(message.updateSlot)
       }
 
       if (message.updateLoop){
-        remote.instance.loop.setPlayback(object.updateLoop.notes, object.updateLoop.length)
+        remote.instance.loop.setPlayback(message.updateLoop.notes, message.updateLoop.length)
       }
     }
 
