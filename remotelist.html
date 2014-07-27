@@ -5,11 +5,13 @@
       <li class="RemoteItem" data-behavior="remote.item" t:repeat='remotes'>
         <strong class=".id" t:bind='.id'></strong>
         <span class=".nickname" t:bind='.nickname'></span>
-        <a class=".muteButton">mute</a>
-        <div class='.vu'>
-          <meter min='-20' class='.left' high='0' value='-20' max='6' />
-          <meter min='-20' class='.right' high='0' value='-20' max='6' />
-        </div>
+        <t:placeholder t:if='.isPlayer'>
+          <a class=".muteButton">mute</a>
+          <div class='.vu' data-behavior='vu' t:bind:data-id='.id'>
+            <meter min='-20' class='.left' high='0' value='-20' max='6' />
+            <meter min='-20' class='.right' high='0' value='-20' max='6' />
+          </div>
+        </t:placeholder>
       </li>
     </ul>
   </div>
