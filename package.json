@@ -1,6 +1,6 @@
 {
   "name": "loop-drop-remote",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "List of remote connections for loop-drop app",
   "main": "index.js",
   "scripts": {
