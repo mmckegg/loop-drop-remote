@@ -6,7 +6,6 @@ document.body.appendChild(element)
 var audioContext = require('../loop-drop-app/audio-context')
 
 var remote = Remote(audioContext, element)
-remote.connect('ws://localhost:7777')
 remote.output.connect(audioContext.destination)
 
 window.remote = remote
