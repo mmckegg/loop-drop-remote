@@ -4,8 +4,6 @@ module.exports = function vu(element){
 
     var currentInstance = null
     var currentValue = null
-    var vuL = null
-    var vuR = null
 
     function remove(){
       if (currentInstance){
@@ -15,9 +13,6 @@ module.exports = function vu(element){
 
     function refresh(action){
       if (action !== 'remove'){
-
-        vuL = element.querySelector('meter.\\.left')
-        vuR = element.querySelector('meter.\\.right')
 
         var context = getContext(element)
         var id = parseInt(element.dataset.id)
@@ -40,12 +35,7 @@ module.exports = function vu(element){
 
     function update(){
       if (currentValue){
-        if (vuL){
-          vuL.value = Math.max(-40, getDecibels(currentValue[0]))
-        }
-        if (vuR){
-          vuR.value = Math.max(-40, getDecibels(currentValue[1]))
-        }
+        element.value = Math.max(-40, getDecibels((currentValue[0] + currentValue[1]) / 2))
       }
       updating = false
     }

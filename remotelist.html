@@ -2,7 +2,38 @@
 <? require './providers/is_empty.js' as isEmpty ?>
 
 <style t:view='mcss' scoped>
+
+  ServerList {
+    li {
+      span.detail {
+        flex: 1;
+        color: #888;
+        text-align: right
+      }
+    }
+    $selectList
+  }
+
   RemoteList {
+    flex: 1;
+    li {
+      span.nickname {
+        flex: 2;
+      }
+      span.detail {
+        flex: 1;
+        color: #888;
+        text-align: right;
+      }
+      meter {
+        width: 50px;
+        margin: 2px 4px;
+      }
+    }
+    $selectList
+  }
+
+  RemotePanel {
     flex: 1;
     position: relative;
     display: flex;
@@ -10,20 +41,17 @@
     margin: 5px 20px;
     font-size: 120%;
 
-    ul {
-      flex: 1;
-      padding: 0;
-      margin: 0;
-      
-      li {
-        list-style: none
-      }
-
-    }
-
     h1 {
       font-weight: normal;
       font-size: 120%;
+      margin-bottom: 4px;
+    }
+
+    h2 {
+      display: flex;
+      input {
+        flex: 1;
+      }
     }
 
     div.info {
@@ -31,18 +59,10 @@
     }
   }
 
-  RemoteItem {
-    padding: 4px 0;
-    span.controls {
-      float:right;
-    }
-  }
-
-  MiniVU {
-    display: inline-block;
-    width: 40px;
-    meter {
-      width: 40px;
+  ConnectForm {
+    display:flex;
+    input.server {
+      flex: 1;
     }
   }
 
@@ -98,35 +118,63 @@
     }
 
   }
+
+  $selectList {
+    padding: 0;
+    margin: 10px 0;
+
+    li {
+      position: relative;
+      border-radius: 5px;
+      padding: 4px;
+      cursor: pointer;
+      display: flex;
+
+      :hover {
+        background: rgba(173, 133, 3, 0.2);
+      }
+    }
+  }
 </style>
 
-<div class="RemoteList">
+<div class="RemotePanel">
   <t:placeholder t:if='clientId'>
-    <h1>Connected</h1>
-    <ul>
-      <li class="RemoteItem" data-behavior="remote.item" t:repeat='remotes'>
-        <strong class=".nickname" t:bind='.nickname' />
-        <span class='.controls' t:if='.isPlayer'>
-          <a data-behavior='mute' t:bind:data-id='.id' class="ToggleButton -mute" href='#mute'>mute</a>
-          <div class='MiniVU' data-behavior='vu' t:bind:data-id='.id'>
-            <meter min='-20' class='.left' high='0' value='-20' max='6' />
-          </div>
-        </span>
-
-        <span class='.controls' t:unless='.isPlayer'>
-          (listener)
+    <h1><strong>Connected to</strong> <span t:bind='server' /></h1>
+    <div>as <input data-preserve-attribute='value' t:bind:value='nickname' data-behavior='changeNickname' /></div>
+    <div class=".info">
+      <p t:if='remotes:isEmpty'>No other participants</p>
+    </div>
+    <ul class='RemoteList'>
+      <li t:repeat='remotes'>
+        <span class=".nickname" t:bind='.nickname' />
+        <t:placeholder class='.controls' t:if='.isPlayer'>
+          <a class="ToggleButton -mute"  data-behavior='mute' t:bind:data-id='.id' href='#mute'>mute</a>
+          <meter min='-20' data-behavior='vu' t:bind:data-id='.id' high='0' value='-20' max='6' />
+        </t:placeholder>
+        <span class='.detail' t:unless='.isPlayer'>
+          listener
         </span>
       </li>
     </ul>
-
-    <div class=".info">
-      <p t:if='remotes:isEmpty'>No other participants</p>
-      <p t:if='server'><strong>Connected to server:</strong> <br/> <span t:bind='server' /></p>
-    </div>
+    <button data-behavior='disconnect'>Disconnect</button>
   </t:placeholder>
 
   <t:placeholder t:unless='clientId'>
     <h1>Not connected</h1>
-    <p t:if='server'><strong>Server must be running at:</strong> <br/> <span t:bind='server' /></p>
+    <ul class='ServerList'>
+      <li data-server='loopjs.com:7777' data-behavior='connect'>
+        <span>Public Server</span>
+        <span class='.detail'>loopjs.com:7777</span>
+      </li>
+      <li data-server='localhost:7777' data-behavior='connect'>
+        <span class='.name'>Local Server</span>
+        <span class='.detail'>localhost:7777</span>
+      </li>
+    </ul>
+    <div class='ConnectForm' data-behavior='connectForm'>
+      <input data-preserve-attribute='value' placeholder='localhost:7777' t:bind:value='server' class='.server' />
+
+      <button class='.connect'>Connect</button>
+    </div>
   </t:placeholder>
 </div>

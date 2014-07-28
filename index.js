@@ -119,17 +119,41 @@ module.exports = function(parentAudioContext, element){
     console.log('sync offset', offset)
   }
 
-  self.connect = function(server, localInstance, nickname){
+  self.setLocalInstance = function(instance){
+    context.localInstance = instance
+    if (context.connection){
+      if (releaseLocalInstance){
+        releaseLocalInstance()
+      }
+      releaseLocalInstance = connectLocalInstance(context.connection, context.localInstance)
+      broadcastLocalInstance()
+    }
+  }
+
+  self.setNickname = function(nickname){
+    context.data.nickname = nickname
+    if (context.connection){
+      context.connection.write({
+        nickname: context.data.nickname
+      })
+    }
+    refresh()
+  }
+
+  self.connect = function(server, nickname){
+
+    self.emit('connnecting', server)
 
     if (context.connection){
       self.disconnect()
     }
 
-    context.connection = connect(server)
+    var server = server.replace(/^.+\:\/\//, '')
+
+    context.connection = connect('ws://' + server)
     context.data.server = server
 
     // send our local messages to server
-    context.localInstance = localInstance
     context.data.nickname = nickname
 
     // sync with other users
@@ -139,11 +163,11 @@ module.exports = function(parentAudioContext, element){
 
     // resync after the server noise has died down
     setTimeout(function(){
-      context.syncer.sync()
+      context.syncer&&context.syncer.sync()
     }, 3000)
 
     if (context.localInstance){
-      releaseLocalInstance = connectLocalInstance(context.connection, localInstance)
+      releaseLocalInstance = connectLocalInstance(context.connection, context.localInstance)
     }
 
     broadcastLocalInstance()
@@ -157,6 +181,7 @@ module.exports = function(parentAudioContext, element){
           if (!context.data.nickname){
             context.data.nickname = 'remote' + message.clientId
           }
+          self.emit('connected', server, message.clientId)
           shouldRefresh = true
         }
         if (message.clientDisconnect){
@@ -176,24 +201,33 @@ module.exports = function(parentAudioContext, element){
   }
 
   self.disconnect = function(){
-    context.connection.close()
+    if (context.connection){
+      context.connection.close()
 
-    context.data.remotes.forEach(function(remote){
-      if (remote.instance){
-        remote.instance.destroy()
+      context.data.remotes.forEach(function(remote){
+        if (remote.instance){
+          remote.instance.destroy()
+        }
+      })
+      
+      if (releaseLocalInstance){
+        releaseLocalInstance()
+        releaseLocalInstance = null
       }
-    })
-    
-    if (releaseLocalInstance){
-      releaseLocalInstance()
-      releaseLocalInstance = null
-    }
 
-    context.data.remotes = []
-    context.remoteLookup = {}
-    context.connection = null
-    context.clientId = null
-    refresh()
+      context.data.remotes = []
+      context.remoteLookup = {}
+      context.connection = null
+      context.data.clientId = null
+
+      context.syncer = null
+
+      self.emit('disconnect')
+      refresh()
+      return true
+    } else {
+      return false
+    }
   }
 
   var updateBehaviors = behave(element)
@@ -204,6 +238,7 @@ module.exports = function(parentAudioContext, element){
     get: getValue,
     syncer: null,
     refresh: refresh,
+    self: self,
     remoteLookup: {},
     data: {
       syncOffset: 0,

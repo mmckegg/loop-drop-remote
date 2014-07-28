@@ -5,6 +5,38 @@ var behaviors = {
   vu: require('./vu'),
   mute: function(element){
     element.onclick = muteHandler
+  },
+  connect: function(element){
+    element.onclick = function(){
+      var context = getContext(element)
+      if (element.dataset.server){
+        context.self.connect(element.dataset.server)
+      }
+    }
+  },
+  disconnect: function(element){
+    element.onclick = function(){
+      var context = getContext(element)
+      context.self.disconnect()
+    }
+  },
+  connectForm: function(element){
+    var serverName = element.querySelector('input.\\.server')
+    var connect = element.querySelector('button.\\.connect')
+
+    connect.onclick = function(){
+      var context = getContext(element)
+      context.self.connect(serverName.value || serverName.placeholder)
+    }
+
+  },
+  changeNickname: function(element){
+    element.onchange = function(){
+      var context = getContext(element)
+      if (element.value){
+        context.self.setNickname(element.value)
+      }
+    }
   }
 }
 
