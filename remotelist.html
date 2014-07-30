@@ -1,5 +1,4 @@
 <? require './views/mcss.js' as mcss ?>
-<? require './providers/is_empty.js' as isEmpty ?>
 
 <style t:view='mcss' scoped>
 
@@ -38,13 +37,14 @@
     position: relative;
     display: flex;
     flex-direction: column;
-    margin: 5px 20px;
+    margin: 10px;
     font-size: 120%;
 
     h1 {
       font-weight: normal;
       font-size: 120%;
       margin-bottom: 4px;
+      margin-top:0;
     }
 
     h2 {
@@ -137,8 +137,8 @@
   }
 </style>
 
-<div class="RemotePanel">
-  <t:placeholder t:if='clientId'>
+<div class="RemotePanel" t:by='state'>
+  <t:placeholder t:when='connected'>
     <h1><strong>Connected to</strong> <span t:bind='server' /></h1>
     <div>as <input data-preserve-attribute='value' t:bind:value='nickname' data-behavior='changeNickname' /></div>
     <div class=".info">
@@ -159,7 +159,11 @@
     <button data-behavior='disconnect'>Disconnect</button>
   </t:placeholder>
 
-  <t:placeholder t:unless='clientId'>
+  <t:placeholder t:when='connecting'>
+    <h1><strong>Connecting to</strong> <span t:bind='server' />...</h1>
+  </t:placeholder>
+
+  <t:placeholder t:when='disconnected'>
     <h1>Not connected</h1>
     <ul class='ServerList'>
       <li data-server='loopjs.com:7777' data-behavior='connect'>

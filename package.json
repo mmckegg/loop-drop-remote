@@ -13,7 +13,7 @@
   },
   "dependencies": {
     "dom-behavior": "^1.2.0",
-    "json-query": "^1.0.0",
+    "json-query": "^1.1.0",
     "become": "^1.4.0",
     "rincewind": "^1.8.0",
     "rincewind-precompile-transform": "^1.1.2",
