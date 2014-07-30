@@ -8,6 +8,9 @@
   },
   "author": "Matt McKegg",
   "license": "ISC",
+  "devDependencies":{
+    "loop-drop-audio-context": "^1.0.0"
+  },
   "dependencies": {
     "dom-behavior": "^1.2.0",
     "json-query": "^1.0.0",
