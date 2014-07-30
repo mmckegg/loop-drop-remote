@@ -1,6 +1,6 @@
 {
   "name": "loop-drop-remote",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "List of remote connections for loop-drop app",
   "main": "index.js",
   "scripts": {
@@ -8,7 +8,7 @@
   },
   "author": "Matt McKegg",
   "license": "ISC",
-  "devDependencies":{
+  "devDependencies": {
     "loop-drop-audio-context": "^1.0.0"
   },
   "dependencies": {
