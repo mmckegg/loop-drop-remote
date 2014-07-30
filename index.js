@@ -7,6 +7,8 @@ var createInstance = require('./lib/create_instance')
 var connectLocalInstance = require('./lib/connect_local_instance')
 var connect = require('./lib/connect')
 var Syncer = require('./lib/syncer')
+var loadSample = require('./lib/load-sample')
+var postFile = require('./lib/post-file')
 
 var IAC = require('inheritable-audio-context')
 
@@ -20,10 +22,7 @@ module.exports = function(parentAudioContext, element){
   self.output = audioContext.createGain()
 
   var releaseLocalInstance = null
-
-  //audioContext.loadSample = function(src, cb){
-//
-  //}
+  audioContext.loadSample = loadSample
 
   function broadcastLocalInstance(to){
     context.connection.write({
@@ -62,6 +61,18 @@ module.exports = function(parentAudioContext, element){
     return shouldRefresh
   }
 
+  function handleSampleRequest(src){
+    if (audioContext.getSampleBlob){
+      var url = context.data.sampleRoot + context.data.clientId + '/' + src
+      audioContext.getSampleBlob(src, function(err, blob){
+        if (blob){
+          postFile(url, blob)
+          console.log('UPLOADING SAMPLE', src)
+        }
+      })
+    }
+  }
+
   function updateRemote(id, message){
     // add new clients
     var shouldRefresh = false
@@ -83,7 +94,9 @@ module.exports = function(parentAudioContext, element){
     // update playback
     if (message.updateSlot || message.updateLoop){
       if (!remote.instance){
-        remote.instance = createInstance(audioContext, context.data.syncOffset)
+        var sampleRoot = context.data.sampleRoot + remote.id + '/'
+        var scopedAudioContext = getScopedContext(audioContext, sampleRoot)
+        remote.instance = createInstance(scopedAudioContext, context.data.syncOffset)
         remote.instance.connect(self.output)
         remote.isPlayer = true
         shouldRefresh = true
@@ -137,12 +150,16 @@ module.exports = function(parentAudioContext, element){
         nickname: context.data.nickname
       })
     }
+    self.emit('nickname', nickname)
     refresh()
   }
 
   self.connect = function(server, nickname){
 
     self.emit('connnecting', server)
+
+    context.data.state = 'connecting'
+
 
     if (context.connection){
       self.disconnect()
@@ -156,9 +173,12 @@ module.exports = function(parentAudioContext, element){
     })
 
     context.data.server = server
+    context.data.sampleRoot = 'http://' + server + '/files/'
 
     // send our local messages to server
-    context.data.nickname = nickname
+    if (nickname){
+      context.data.nickname = nickname
+    }
 
     // sync with other users
     context.syncer = Syncer(audioContext.scheduler, context.connection)
@@ -186,12 +206,16 @@ module.exports = function(parentAudioContext, element){
             context.data.nickname = 'remote' + message.clientId
           }
           self.emit('connected', server, message.clientId)
+          context.data.state = 'connected'
           shouldRefresh = true
         }
         if (message.clientDisconnect){
           if (remoteDisconnect(message.clientDisconnect)){
             shouldRefresh = true
           }
+        }
+        if (message.requestFile){
+          handleSampleRequest(message.requestFile)
         }
       } else if (typeof message.from == 'number') { // message from remote
         if (updateRemote(message.from, message)){
@@ -226,6 +250,7 @@ module.exports = function(parentAudioContext, element){
 
       context.syncer = null
 
+      context.data.state = 'disconnected'
       self.emit('disconnect')
       refresh()
       return true
@@ -244,7 +269,9 @@ module.exports = function(parentAudioContext, element){
     refresh: refresh,
     self: self,
     remoteLookup: {},
+    globals: require('./providers'),
     data: {
+      state: 'disconnected',
       syncOffset: 0,
       clientId: null,
       remotes: []
@@ -277,4 +304,11 @@ module.exports = function(parentAudioContext, element){
 
 function obtain(obj){
   return JSON.parse(JSON.stringify(obj))
+}
+
+function getScopedContext(parent, rootUrl){
+  var context = Object.create(parent)
+  context.sampleCache = {}
+  context.sampleRoot = rootUrl
+  return context
 }
