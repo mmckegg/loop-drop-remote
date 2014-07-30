@@ -151,6 +151,10 @@ module.exports = function(parentAudioContext, element){
     var server = server.replace(/^.+\:\/\//, '')
 
     context.connection = connect('ws://' + server)
+    context.connection.on('error', function(err){
+      self.disconnect()
+    })
+
     context.data.server = server
 
     // send our local messages to server
