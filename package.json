@@ -9,6 +9,7 @@
   "author": "Matt McKegg",
   "license": "ISC",
   "devDependencies": {
+    "beefy": "^2.1.0",
     "loop-drop-audio-context": "^1.0.0"
   },
   "dependencies": {
