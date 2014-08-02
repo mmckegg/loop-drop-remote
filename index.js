@@ -36,10 +36,14 @@ module.exports = function(parentAudioContext, element){
           to: to
         })
       })
-      context.connection.write({
-        updateLoop: context.localInstance.loop.getPlayback(),
-        to: to
+
+      context.localInstance.loop.getDescriptors().forEach(function(descriptor){
+        context.connection.write({
+          updateLoop: descriptor,
+          to: to
+        })
       })
+
     }
   }
 
@@ -107,7 +111,7 @@ module.exports = function(parentAudioContext, element){
       }
 
       if (message.updateLoop){
-        remote.instance.loop.setPlayback(message.updateLoop.notes, message.updateLoop.length)
+        remote.instance.loop.update(message.updateLoop)
       }
     }
 
@@ -117,19 +121,6 @@ module.exports = function(parentAudioContext, element){
     }
 
     return shouldRefresh
-  }
-
-  function updateOffset(offset, tempo){
-    context.data.syncOffset = offset
-    if (context.localInstance){
-      context.localInstance.setOffset(offset)
-    }
-    context.data.remotes.forEach(function(remote){
-      if (remote.instance){
-        remote.instance.setOffset(offset)
-      }
-    })
-    console.log('sync offset', offset)
   }
 
   self.setLocalInstance = function(instance){
@@ -182,7 +173,6 @@ module.exports = function(parentAudioContext, element){
 
     // sync with other users
     context.syncer = Syncer(audioContext.scheduler, context.connection)
-    context.syncer.on('offset', updateOffset)
     context.syncer.sync()
 
     // resync after the server noise has died down
