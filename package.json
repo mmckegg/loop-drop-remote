@@ -19,7 +19,7 @@
     "rincewind": "^1.8.0",
     "rincewind-precompile-transform": "^1.1.2",
     "inheritable-audio-context": "^1.0.2",
-    "soundbank": "^0.4.1",
+    "soundbank": "^0.7.0",
     "ditty": "^2.1.0",
     "through": "^2.3.4",
     "websocket-stream": "^0.6.0",
